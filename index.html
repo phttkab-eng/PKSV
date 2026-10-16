@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>寶覺承傳者 - Po Kok Heritage Transcender</title>
+    <!-- Tailwind CSS for UI Layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Outfit:wght@400;600;800&display=swap');
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0c0a09;
+            font-family: 'Noto Serif TC', 'KaiTi', 'STKaiti', serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #1a0f07;
+        }
+
+        /* Buddhist & STEAM Emerald-Gold Glow Effects */
+        .text-steam-gold {
+            color: #d4af37;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(14, 92, 54, 0.6);
+        }
+
+        .border-steam-glow {
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3), inset 0 0 10px rgba(14, 92, 54, 0.3);
+        }
+
+        .steam-panel {
+            background: linear-gradient(135deg, rgba(14, 40, 26, 0.95) 0%, rgba(15, 12, 8, 0.98) 100%);
+            border: 2px solid #d4af37;
+            backdrop-filter: blur(12px);
+        }
+
+        /* Virtual Joystick Zone */
+        #joystickZone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(14, 92, 54, 0.3);
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            display: none;
+            pointer-events: auto;
+            z-index: 40;
+        }
+
+        #joystickKnob {
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fde047 0%, #0e5c36 100%);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.9);
+            pointer-events: none;
+        }
+
+        @keyframes gearRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-gear {
+            animation: gearRotate 12s linear infinite;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen select-none overflow-hidden text-amber-100">
+
+    <!-- GAME CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI OVERLAY LAYER -->
+    <div id="uiOverlay" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 z-10">
+
+        <!-- TOP HUD BAR -->
+        <div id="topHUD" class="hidden flex flex-wrap md:flex-nowrap items-center justify-between gap-3 w-full max-w-6xl mx-auto pointer-events-auto">
+            
+            <!-- Player Stats Header (STEAM Lotus Mascot Avatar) -->
+            <div class="flex items-center gap-4 bg-stone-950/85 border border-amber-500/50 rounded-full px-5 py-2 backdrop-blur-md shadow-lg">
+                <!-- Mascot Avatar Icon -->
+                <div class="relative w-12 h-12 rounded-full bg-gradient-to-tr from-emerald-900 via-emerald-700 to-amber-500 border-2 border-yellow-400 flex items-center justify-center shadow-md overflow-hidden shrink-0">
+                    <svg viewBox="0 0 100 100" class="w-10 h-10">
+                        <path d="M50 15 Q65 35 50 60 Q35 35 50 15 Z" fill="#0e5c36" stroke="#d4af37" stroke-width="3"/>
+                        <path d="M30 30 Q50 45 35 70 Q15 50 30 30 Z" fill="#d4af37" stroke="#0e5c36" stroke-width="2"/>
+                        <path d="M70 30 Q50 45 65 70 Q85 50 70 30 Z" fill="#d4af37" stroke="#0e5c36" stroke-width="2"/>
+                        <circle cx="50" cy="65" r="12" fill="#0e5c36" stroke="#fde047" stroke-width="2"/>
+                        <circle cx="50" cy="65" r="4" fill="#d4af37"/>
+                    </svg>
+                    <div class="absolute -bottom-0.5 -right-0.5 bg-amber-500 text-stone-950 font-black text-[10px] px-1.5 py-0.2 rounded-full border border-yellow-200">
+                        Lv.<span id="hudLevel">1</span>
+                    </div>
+                </div>
+
+                <!-- HP & Merit EXP Progress Bars -->
+                <div class="flex flex-col gap-1 w-40 md:w-56">
+                    <!-- HP Bar -->
+                    <div class="flex justify-between items-center text-xs font-semibold text-emerald-300">
+                        <span>慈悲心 (HP)</span>
+                        <span id="hpText">200 / 200</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-stone-900 rounded-full overflow-hidden border border-emerald-600/50">
+                        <div id="hpBar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-200" style="width: 100%;"></div>
+                    </div>
+
+                    <!-- EXP Bar -->
+                    <div class="flex justify-between items-center text-xs font-semibold text-amber-300">
+                        <span>功德值 (EXP)</span>
+                        <span id="expText">0%</span>
+                    </div>
+                    <div class="w-full h-2 bg-stone-900 rounded-full overflow-hidden border border-amber-600/50">
+                        <div id="expBar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 transition-all duration-150" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer & Transcended Counter -->
+            <div class="flex items-center gap-5 bg-stone-950/85 border border-amber-500/50 rounded-full px-6 py-2 backdrop-blur-md shadow-lg">
+                <div class="flex items-center gap-2">
+                    <span class="text-amber-400 text-lg">⏳</span>
+                    <span id="timerText" class="font-mono text-xl font-bold text-amber-200 tracking-wider">00:00</span>
+                </div>
+                <div class="h-6 w-px bg-amber-600/40"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-emerald-400 text-lg">🪷</span>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-amber-400 uppercase tracking-wider">超度惡念</span>
+                        <span id="killText" class="font-bold text-yellow-300 text-base leading-none">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio & Pause Controls -->
+            <div class="flex items-center gap-3">
+                <button id="audioBtn" class="w-10 h-10 rounded-full bg-stone-900/90 border border-amber-500/50 text-amber-300 hover:bg-emerald-700 hover:text-amber-100 transition-all flex items-center justify-center text-lg shadow-md">
+                    🔊
+                </button>
+                <button id="pauseBtn" class="w-10 h-10 rounded-full bg-stone-900/90 border border-amber-500/50 text-amber-300 hover:bg-emerald-700 hover:text-amber-100 transition-all flex items-center justify-center text-lg shadow-md">
+                    ⏸️
+                </button>
+            </div>
+        </div>
+
+        <!-- WEAPONS DISPLAY TRAY (Bottom Center) -->
+        <div id="weaponsTray" class="hidden pointer-events-auto mx-auto mb-2 bg-stone-950/80 border border-amber-600/40 rounded-full px-4 py-1.5 flex items-center gap-3 backdrop-blur-sm shadow-md">
+            <!-- Weapon icons injected dynamically -->
+        </div>
+    </div>
+
+    <!-- TOUCH JOYSTICK ZONE -->
+    <div id="joystickZone">
+        <div id="joystickKnob"></div>
+    </div>
+
+    <!-- START TITLE SCREEN MODAL -->
+    <div id="startModal" class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/90 backdrop-blur-md">
+        <div class="steam-panel max-w-xl w-full rounded-3xl p-6 md:p-8 text-center border-steam-glow relative overflow-hidden">
+            <!-- Background Decorative Gear -->
+            <div class="absolute -top-16 -right-16 w-56 h-56 border-4 border-emerald-600/20 rounded-full animate-gear pointer-events-none flex items-center justify-center">
+                <div class="w-32 h-32 border-2 border-amber-500/30 rounded-full"></div>
+            </div>
+
+            <div class="text-5xl md:text-6xl mb-2">🪷⚙️</div>
+            <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-300 to-yellow-500 tracking-wider text-steam-gold mb-1">
+                寶覺承傳者
+            </h1>
+            <p class="text-xs md:text-sm text-emerald-300 tracking-widest uppercase mb-6">
+                Po Kok STEAM Team • 禪院木廊迷宮超度之旅
+            </p>
+
+            <div class="bg-stone-950/80 border border-emerald-600/40 rounded-2xl p-4 text-left text-xs md:text-sm space-y-2 mb-6 text-stone-200">
+                <p class="text-amber-300 font-bold flex items-center gap-2">
+                    <span>🧘</span> 遊戲簡介：
+                </p>
+                <p class="leading-relaxed">
+                    化身為<b>「寶覺STEAM傳承者」</b>，配戴電路蓮花冠與科技齒輪，穿梭於<b>禪院木廊迷宮</b>之中！以「蓮花芯光」、「木魚清音」、「金剛念珠」與「梵音法輪」淨化「貪、嗔、癡、執」書法墨跡惡念！
+                </p>
+                <div class="pt-2 border-t border-emerald-800/40 grid grid-cols-2 gap-2 text-xs text-amber-200">
+                    <div>🎮 <b>控制方式:</b> WASD / 鍵盤箭頭 或 觸控搖桿</div>
+                    <div>🧱 <b>迷宮特徵:</b> 善用古風木廊牆壁阻擋惡念與反彈法輪</div>
+                </div>
+            </div>
+
+            <button id="startGameBtn" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-amber-500 to-emerald-700 text-stone-950 font-black text-lg md:text-xl shadow-xl hover:brightness-110 active:scale-98 transition-all border border-yellow-200 flex items-center justify-center gap-2 cursor-pointer">
+                <span>🪷</span> 開始修行 • 穿越迷宮
+            </button>
+        </div>
+    </div>
+
+    <!-- BUDDHIST TRIVIA QUIZ MODAL -->
+    <div id="quizModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/90 backdrop-blur-md">
+        <div class="steam-panel max-w-xl w-full rounded-3xl p-6 md:p-8 text-center border-steam-glow relative">
+            <div class="flex items-center justify-center gap-2 text-amber-400 text-sm font-bold tracking-widest uppercase mb-1">
+                <span>🪷</span> 佛學智慧考驗 <span>🪷</span>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-black text-yellow-300 mb-2 text-steam-gold" id="quizTitle">參透佛理 • 般若加持</h2>
+            <p class="text-xs text-stone-300 mb-6">回答正確將獲得<span class="text-yellow-400 font-bold">【般若加持】強效升級</span>選項！</p>
+
+            <!-- Question Card -->
+            <div class="bg-stone-900/90 border border-emerald-600/50 rounded-2xl p-5 mb-6 text-left shadow-inner">
+                <div class="text-emerald-300 text-xs font-semibold mb-2" id="quizCategory">【基礎佛理】</div>
+                <div class="text-stone-100 font-bold text-base md:text-lg leading-relaxed mb-4" id="quizQuestionText">
+                    問題加載中...
+                </div>
+                <div id="quizOptionsContainer" class="grid grid-cols-1 gap-2.5">
+                    <!-- Options injected dynamically -->
+                </div>
+            </div>
+
+            <div id="quizFeedback" class="hidden rounded-xl p-3 text-xs md:text-sm font-bold text-center border"></div>
+        </div>
+    </div>
+
+    <!-- LEVEL UP / UPGRADE SELECTION MODAL -->
+    <div id="levelUpModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/85 backdrop-blur-md">
+        <div class="steam-panel max-w-2xl w-full rounded-3xl p-6 md:p-8 text-center border-steam-glow relative">
+            <div class="text-emerald-400 text-sm font-bold tracking-widest uppercase mb-1" id="upgradeSubtitle">~ 智慧開悟 • 法寶升級 ~</div>
+            <h2 class="text-2xl md:text-4xl font-black text-yellow-300 mb-6 text-steam-gold" id="upgradeTitle">選擇佛教科技法門</h2>
+
+            <div id="upgradeCardsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+                <!-- Cards injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSE MODAL -->
+    <div id="pauseModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md">
+        <div class="steam-panel max-w-md w-full rounded-3xl p-6 text-center border-steam-glow">
+            <div class="text-4xl mb-2">🧘</div>
+            <h2 class="text-2xl font-bold text-amber-300 mb-4">禪定中 (遊戲暫停)</h2>
+            <div class="space-y-3">
+                <button id="resumeBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-700 to-amber-500 text-stone-950 font-bold hover:brightness-110 transition-all cursor-pointer">
+                    繼續修行
+                </button>
+                <button id="restartBtn" class="w-full py-3 rounded-xl bg-stone-900 border border-emerald-600/40 text-amber-200 font-semibold hover:bg-stone-800 transition-all cursor-pointer">
+                    重新開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER / SUMMARY MODAL -->
+    <div id="gameOverModal" class="hidden absolute inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/90 backdrop-blur-md">
+        <div class="steam-panel max-w-lg w-full rounded-3xl p-6 md:p-8 text-center border-steam-glow relative">
+            <div class="text-5xl mb-3" id="summaryIcon">🕯️</div>
+            <h2 class="text-3xl font-black text-amber-300 mb-1" id="summaryTitle">大徹大悟</h2>
+            <p class="text-xs text-emerald-400 tracking-widest uppercase mb-6" id="summaryRank">修為境界：心無罣礙</p>
+
+            <div class="bg-stone-950/90 border border-amber-600/30 rounded-2xl p-4 text-left space-y-3 mb-6">
+                <div class="flex justify-between items-center text-sm border-b border-amber-800/40 pb-2">
+                    <span class="text-stone-400">生存時間</span>
+                    <span id="summaryTime" class="font-bold text-yellow-300 font-mono text-base">00:00</span>
+                </div>
+                <div class="flex justify-between items-center text-sm border-b border-amber-800/40 pb-2">
+                    <span class="text-stone-400">超度書法惡念數</span>
+                    <span id="summaryKills" class="font-bold text-emerald-400 font-mono text-base">0</span>
+                </div>
+                <div class="flex justify-between items-center text-sm border-b border-amber-800/40 pb-2">
+                    <span class="text-stone-400">最高修為等級</span>
+                    <span id="summaryLevel" class="font-bold text-amber-300 font-mono text-base">Lv.1</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-stone-400">獲得總功德值</span>
+                    <span id="summaryMerit" class="font-bold text-yellow-400 font-mono text-base">0</span>
+                </div>
+            </div>
+
+            <button id="retryBtn" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-700 via-amber-500 to-emerald-700 text-stone-950 font-black text-lg shadow-xl hover:brightness-110 active:scale-98 transition-all cursor-pointer">
+                🪷 重返迷宮修行
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAME SCRIPT -->
+    <script>
+        /* ==========================================================================
+           1. AUDIO SYNTHESIZER MODULE (Web Audio API)
+           ========================================================================== */
+        class BuddhistAudioSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            // 木魚聲波 (Resonant wooden block knock)
+            playWoodenFish() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(360, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
+
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.09);
+            }
+
+            // 蓮花芯光 Laser Sound
+            playLotusLaser() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+
+            // 蓮花心印 (Homing Lotus Seal Sound)
+            playLotusSeal() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.12);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+
+            // 頌缽深沉餘音 (Buddhist Singing Bowl hum)
+            playSingingBowl() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [432, 864].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.2 / (idx + 1), now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 2.0);
+                });
+            }
+
+            // 升級鐘聲
+            playLevelUp() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now + i * 0.06);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.06 + 0.6);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.6);
+                });
+            }
+
+            // 拾取功德珠 (Pickup Orb)
+            playCollectOrb() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(960, now);
+                osc.frequency.exponentialRampToValueAtTime(1400, now + 0.07);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            }
+
+            // 答對佛音 (Chime sound for correct answer)
+            playCorrectAnswer() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [659.25, 880, 1046.5, 1318.5].forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.5);
+                });
+            }
+
+            // 答錯提示
+            playWrongAnswer() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+        }
+
+        const audio = new BuddhistAudioSynth();
+
+        /* ==========================================================================
+           2. UPGRADES DATABASE
+           ========================================================================== */
+        const UPGRADES_DATABASE = [
+            {
+                id: 'lotus_beam',
+                title: '蓮花芯光',
+                type: 'weapon',
+                key: 'lotusBeam',
+                icon: '⚡',
+                desc: '從寶覺蓮花頭冠射出貫穿電路光束，轟擊前方惡念。',
+                upgradeDesc: ['解鎖蓮花芯光束', '+30% 光束寬度與傷害', '縮短 25% 充能發射間隔', '光束分裂為雙重交叉光芒', '+50% 貫穿威力']
+            },
+            {
+                id: 'mala_beads',
+                title: '金剛念珠',
+                type: 'weapon',
+                key: 'malaBeads',
+                icon: '📿',
+                desc: '環繞主角旋轉的科技金剛念珠，阻擋並淨化靠近惡念。',
+                upgradeDesc: ['解鎖金剛念珠 (3顆)', '+1 顆念珠並提升旋轉速度', '+2 顆念珠與擴大防護圈', '+30% 念珠撞擊傷害', '念珠擴展為八卦陣型 (+2顆)']
+            },
+            {
+                id: 'wooden_fish',
+                title: '木魚清音',
+                type: 'weapon',
+                key: 'woodenFish',
+                icon: '🪵',
+                desc: '發射擴散式木魚聲波，強烈擊退周圍書法惡念。',
+                upgradeDesc: ['解鎖木魚清音', '縮短 20% 敲擊間隔', '擴大 35% 聲波影響範圍', '+35% 聲波傷害與退擊力', '聲波附帶二次金光震波']
+            },
+            {
+                id: 'dharma_wheel',
+                title: '梵音法輪',
+                type: 'weapon',
+                key: 'dharmaWheel',
+                icon: '☸️',
+                desc: '發射金光法輪，可在迷宮木牆上彈射擊殺惡念。',
+                upgradeDesc: ['解鎖梵音法輪 (4向)', '提升法輪旋轉速度與彈射次數', '增加發射方向至 (6向)', '+40% 傷害力', '法輪停留牆邊持續旋轉']
+            },
+            {
+                id: 'lotus_seal',
+                title: '蓮花心印',
+                type: 'weapon',
+                key: 'lotusSeal',
+                icon: '🪷',
+                desc: '發射追蹤蓮花印記，自動尋找周圍惡念並爆炸淨化。',
+                upgradeDesc: ['解鎖蓮花心印 (2枚)', '+1 枚蓮花心印', '提升追蹤飛行速度與範圍', '+35% 爆炸傷害', '+2 枚蓮花心印 (連發)']
+            },
+            {
+                id: 'stat_hp',
+                title: '菩提心法',
+                type: 'stat',
+                key: 'maxHp',
+                icon: '💚',
+                desc: '慈悲心上限提升 35%，並立即恢復 30% HP。',
+                upgradeDesc: ['提升最大慈悲心 (+35%)']
+            },
+            {
+                id: 'stat_speed',
+                title: '輕安步',
+                type: 'stat',
+                key: 'speed',
+                icon: '👟',
+                desc: '身心輕安，穿梭迷宮移動速度提升 15%。',
+                upgradeDesc: ['提升移動速度 (+15%)']
+            },
+            {
+                id: 'stat_magnet',
+                title: '慧眼廣照',
+                type: 'stat',
+                key: 'magnet',
+                icon: '🧲',
+                desc: '吸引功德珠的攝受範圍擴大 40%。',
+                upgradeDesc: ['擴大功德攝受範圍 (+40%)']
+            },
+            {
+                id: 'stat_damage',
+                title: '般若妙智',
+                type: 'stat',
+                key: 'damage',
+                icon: '⚔️',
+                desc: '般若智慧大增，所有法寶傷害提升 20%。',
+                upgradeDesc: ['提升全法寶傷害 (+20%)']
+            }
+        ];
+
+        /* ==========================================================================
+           3. CANVAS SETUP & MAZE GRID WORLD
+           ========================================================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let windowWidth = window.innerWidth;
+        let windowHeight = window.innerHeight;
+
+        function resizeCanvas() {
+            windowWidth = window.innerWidth;
+            windowHeight = window.innerHeight;
+            canvas.width = windowWidth;
+            canvas.height = windowHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Engine Variables
+        let gameState = 'TITLE'; 
+        let lastTime = 0;
+        let survivalTime = 0;
+        let transcendedCount = 0;
+        let totalMeritCollected = 0;
+        let camera = { x: 0, y: 0 };
+
+        /* MAZE MAP GENERATION SETUP */
+        const GRID_COLS = 60;
+        const GRID_ROWS = 60;
+        const TILE_SIZE = 90;
+        const WORLD_WIDTH = GRID_COLS * TILE_SIZE;
+        const WORLD_HEIGHT = GRID_ROWS * TILE_SIZE;
+
+        const mazeGrid = new Array(GRID_ROWS).fill(0).map(() => new Array(GRID_COLS).fill(0));
+
+        function generateMaze() {
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (r === 0 || r === GRID_ROWS - 1 || c === 0 || c === GRID_COLS - 1) {
+                        mazeGrid[r][c] = 1;
+                        continue;
+                    }
+
+                    const centerR = Math.floor(GRID_ROWS / 2);
+                    const centerC = Math.floor(GRID_COLS / 2);
+                    if (Math.abs(r - centerR) < 5 && Math.abs(c - centerC) < 5) {
+                        mazeGrid[r][c] = 0;
+                        continue;
+                    }
+
+                    if (r % 4 === 0 && c % 4 === 0) {
+                        mazeGrid[r][c] = 2; // Lotus Stone Pillar
+                    } else if (r % 4 === 0 && (c % 2 === 0) && (Math.sin(r * 12.3 + c * 45.6) > 0.1)) {
+                        mazeGrid[r][c] = 1; // Wooden Carved Wall
+                    } else if (c % 4 === 0 && (r % 2 === 0) && (Math.cos(r * 33.1 + c * 17.8) > 0.2)) {
+                        mazeGrid[r][c] = 1; // Wooden Carved Wall
+                    } else {
+                        mazeGrid[r][c] = 0; // Clear Wooden Corridor Floor
+                    }
+                }
+            }
+        }
+        generateMaze();
+
+        /* Wall Collision Helper */
+        function checkWallCollision(x, y, radius) {
+            const minC = Math.max(0, Math.floor((x - radius) / TILE_SIZE));
+            const maxC = Math.min(GRID_COLS - 1, Math.floor((x + radius) / TILE_SIZE));
+            const minR = Math.max(0, Math.floor((y - radius) / TILE_SIZE));
+            const maxR = Math.min(GRID_ROWS - 1, Math.floor((y + radius) / TILE_SIZE));
+
+            for (let r = minR; r <= maxR; r++) {
+                for (let c = minC; c <= maxC; c++) {
+                    if (mazeGrid[r][c] !== 0) {
+                        const tileX = c * TILE_SIZE;
+                        const tileY = r * TILE_SIZE;
+
+                        const closestX = Math.max(tileX, Math.min(x, tileX + TILE_SIZE));
+                        const closestY = Math.max(tileY, Math.min(y, tileY + TILE_SIZE));
+
+                        const distX = x - closestX;
+                        const distY = y - closestY;
+                        const distance = Math.hypot(distX, distY);
+
+                        if (distance < radius) {
+                            return {
+                                collided: true,
+                                tileX: c,
+                                tileY: r,
+                                overlap: radius - distance,
+                                nx: distance === 0 ? 1 : distX / distance,
+                                ny: distance === 0 ? 0 : distY / distance
+                            };
+                        }
+                    }
+                }
+            }
+            return { collided: false };
+        }
+
+        /* ==========================================================================
+           4. CONTROLS & PLAYER MASCOT (寶覺STEAM傳承者)
+           ========================================================================== */
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+        });
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        let joystickActive = false;
+        let joystickVector = { x: 0, y: 0 };
+        let touchOrigin = { x: 0, y: 0 };
+
+        const joystickZone = document.getElementById('joystickZone');
+        const joystickKnob = document.getElementById('joystickKnob');
+
+        window.addEventListener('touchstart', (e) => {
+            if (gameState !== 'PLAYING') return;
+            const touch = e.touches[0];
+            if (touch.clientY > windowHeight * 0.3) {
+                joystickActive = true;
+                touchOrigin = { x: touch.clientX, y: touch.clientY };
+                joystickZone.style.display = 'block';
+                joystickZone.style.left = `${touchOrigin.x - 60}px`;
+                joystickZone.style.top = `${touchOrigin.y - 60}px`;
+                joystickKnob.style.transform = `translate(0px, 0px)`;
+                joystickVector = { x: 0, y: 0 };
+            }
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - touchOrigin.x;
+            const dy = touch.clientY - touchOrigin.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 45;
+            const angle = Math.atan2(dy, dx);
+            const moveDist = Math.min(dist, maxDist);
+
+            const knobX = Math.cos(angle) * moveDist;
+            const knobY = Math.sin(angle) * moveDist;
+            joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+            joystickVector = { x: knobX / maxDist, y: knobY / maxDist };
+        });
+
+        const resetJoystick = () => {
+            joystickActive = false;
+            joystickZone.style.display = 'none';
+            joystickVector = { x: 0, y: 0 };
+        };
+        window.addEventListener('touchend', resetJoystick);
+        window.addEventListener('touchcancel', resetJoystick);
+
+        class Player {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = (GRID_COLS * TILE_SIZE) / 2;
+                this.y = (GRID_ROWS * TILE_SIZE) / 2;
+                this.radius = 22;
+                this.speed = 3.6;
+                this.hp = 300;
+                this.maxHp = 300;
+                this.level = 1;
+                this.exp = 0;
+                this.nextExp = 100;
+                this.magnetRadius = 140;
+                this.damageMult = 1.0;
+                this.facingAngle = 0;
+
+                this.weapons = {
+                    lotusBeam: 1,
+                    malaBeads: 0,
+                    woodenFish: 0,
+                    dharmaWheel: 0,
+                    lotusSeal: 0
+                };
+
+                this.timers = {
+                    lotusBeam: 0,
+                    woodenFish: 0,
+                    dharmaWheel: 0,
+                    lotusSeal: 0
+                };
+
+                this.gearAngle = 0;
+            }
+
+            update(dt) {
+                let vx = 0;
+                let vy = 0;
+
+                if (keys['KeyW'] || keys['ArrowUp']) vy -= 1;
+                if (keys['KeyS'] || keys['ArrowDown']) vy += 1;
+                if (keys['KeyA'] || keys['ArrowLeft']) vx -= 1;
+                if (keys['KeyD'] || keys['ArrowRight']) vx += 1;
+
+                if (joystickActive) {
+                    vx = joystickVector.x;
+                    vy = joystickVector.y;
+                }
+
+                const len = Math.hypot(vx, vy);
+                if (len > 0) {
+                    if (!joystickActive) { vx /= len; vy /= len; }
+                    this.facingAngle = Math.atan2(vy, vx);
+
+                    const nextX = this.x + vx * this.speed;
+                    const colX = checkWallCollision(nextX, this.y, this.radius);
+                    if (!colX.collided) {
+                        this.x = nextX;
+                    } else {
+                        this.x += colX.nx * colX.overlap;
+                    }
+
+                    const nextY = this.y + vy * this.speed;
+                    const colY = checkWallCollision(this.x, nextY, this.radius);
+                    if (!colY.collided) {
+                        this.y = nextY;
+                    } else {
+                        this.y += colY.ny * colY.overlap;
+                    }
+                }
+
+                camera.x = this.x - windowWidth / 2;
+                camera.y = this.y - windowHeight / 2;
+
+                this.gearAngle += 0.03;
+                this.updateWeapons(dt);
+            }
+
+            draw() {
+                const screenX = this.x - camera.x;
+                const screenY = this.y - camera.y;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                // Floating Lotus Pedestal Glow Underneath
+                ctx.beginPath();
+                ctx.ellipse(0, 22, 28, 10, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(14, 92, 54, 0.4)';
+                ctx.fill();
+
+                // 1. Golden STEAM Halo
+                ctx.beginPath();
+                ctx.arc(0, -10, this.radius * 1.6, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.7)';
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#d4af37';
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+
+                for (let i = 0; i < 4; i++) {
+                    const ha = (i * Math.PI) / 2 + this.gearAngle * 0.5;
+                    const hx = Math.cos(ha) * this.radius * 1.6;
+                    const hy = -10 + Math.sin(ha) * this.radius * 1.6;
+                    ctx.fillStyle = '#fde047';
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 2. Lotus Crown Mascot
+                ctx.save();
+                ctx.translate(0, -22);
+                const petalAngles = [-0.6, -0.3, 0, 0.3, 0.6];
+                petalAngles.forEach((ang, idx) => {
+                    ctx.save();
+                    ctx.rotate(ang);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(8, -18, 0, -26);
+                    ctx.quadraticCurveTo(-8, -18, 0, 0);
+                    ctx.fillStyle = idx % 2 === 0 ? '#0e5c36' : '#d4af37';
+                    ctx.fill();
+                    ctx.strokeStyle = '#fde047';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    if (idx === 2) {
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -4);
+                        ctx.lineTo(0, -18);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(0, -18, 2, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                });
+                ctx.restore();
+
+                // 3. Head & Peaceful Face
+                ctx.beginPath();
+                ctx.arc(0, -8, 12, 0, Math.PI * 2);
+                ctx.fillStyle = '#fef08a';
+                ctx.fill();
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#0e5c36';
+                ctx.beginPath();
+                ctx.arc(-4, -9, 1.8, 0, Math.PI * 2);
+                ctx.arc(4, -9, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 4. Emerald Monk Robe (#0E5C36)
+                ctx.beginPath();
+                ctx.moveTo(-14, 20);
+                ctx.lineTo(-10, 2);
+                ctx.lineTo(0, -2);
+                ctx.lineTo(10, 2);
+                ctx.lineTo(14, 20);
+                ctx.closePath();
+                ctx.fillStyle = '#0e5c36';
+                ctx.fill();
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(-10, 2);
+                ctx.lineTo(12, 18);
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // 5. Interlocked STEAM Gears Emblem at Belt
+                drawGear(ctx, -3, 10, 6, 6, this.gearAngle * 2, '#0e5c36', '#d4af37');
+                drawGear(ctx, 4, 11, 5, 5, -this.gearAngle * 2, '#d4af37', '#0e5c36');
+
+                ctx.restore();
+            }
+
+            addExp(amount) {
+                this.exp += amount;
+                totalMeritCollected += amount;
+                if (this.exp >= this.nextExp) this.levelUp();
+                updateHUD();
+            }
+
+            levelUp() {
+                this.exp -= this.nextExp;
+                this.level++;
+                this.nextExp = Math.floor(this.nextExp * 1.35 + 20);
+                audio.playLevelUp();
+                triggerQuizModal();
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    triggerGameOver();
+                }
+                updateHUD();
+            }
+
+            updateWeapons(dt) {
+                // 1. 蓮花芯光
+                if (this.weapons.lotusBeam > 0) {
+                    this.timers.lotusBeam += dt;
+                    const cooldown = Math.max(0.4, 1.6 - this.weapons.lotusBeam * 0.2);
+                    if (this.timers.lotusBeam >= cooldown) {
+                        this.timers.lotusBeam = 0;
+                        fireLotusBeam(this);
+                    }
+                }
+
+                // 2. 木魚清音
+                if (this.weapons.woodenFish > 0) {
+                    this.timers.woodenFish += dt;
+                    const cooldown = Math.max(0.6, 2.0 - this.weapons.woodenFish * 0.25);
+                    if (this.timers.woodenFish >= cooldown) {
+                        this.timers.woodenFish = 0;
+                        fireWoodenFish(this);
+                    }
+                }
+
+                // 3. 梵音法輪
+                if (this.weapons.dharmaWheel > 0) {
+                    this.timers.dharmaWheel += dt;
+                    const cooldown = Math.max(0.8, 2.2 - this.weapons.dharmaWheel * 0.3);
+                    if (this.timers.dharmaWheel >= cooldown) {
+                        this.timers.dharmaWheel = 0;
+                        fireDharmaWheel(this);
+                    }
+                }
+
+                // 4. 蓮花心印
+                if (this.weapons.lotusSeal > 0) {
+                    this.timers.lotusSeal += dt;
+                    const cooldown = Math.max(0.5, 1.8 - this.weapons.lotusSeal * 0.2);
+                    if (this.timers.lotusSeal >= cooldown) {
+                        this.timers.lotusSeal = 0;
+                        fireLotusSeal(this);
+                    }
+                }
+            }
+        }
+
+        const player = new Player();
+
+        function drawGear(ctx, x, y, radius, teeth, angle, color, border) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.strokeStyle = border;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            for (let i = 0; i < teeth; i++) {
+                const a = (i * Math.PI * 2) / teeth;
+                ctx.beginPath();
+                ctx.arc(Math.cos(a) * (radius + 2), Math.sin(a) * (radius + 2), 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = border;
+                ctx.fill();
+            }
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = '#0c0a09';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /* ==========================================================================
+           5. WEAPONS ENGINE & PROJECTILES
+           ========================================================================== */
+        let projectiles = [];
+        let shockwaves = [];
+        let lotusBeams = [];
+        let malaOrbitAngle = 0;
+
+        function fireLotusBeam(p) {
+            audio.playLotusLaser();
+            const level = p.weapons.lotusBeam;
+            lotusBeams.push({
+                x: p.x,
+                y: p.y,
+                angle: p.facingAngle,
+                width: 28 + level * 10,
+                length: 650,
+                damage: (35 + level * 18) * p.damageMult,
+                timer: 0.25,
+                duration: 0.25
+            });
+        }
+
+        function fireWoodenFish(p) {
+            audio.playWoodenFish();
+            const level = p.weapons.woodenFish;
+            shockwaves.push({
+                x: p.x,
+                y: p.y,
+                radius: 10,
+                maxRadius: 130 + level * 30,
+                damage: (25 + level * 12) * p.damageMult,
+                knockback: 15 + level * 2,
+                alpha: 1.0
+            });
+        }
+
+        function fireDharmaWheel(p) {
+            const level = p.weapons.dharmaWheel;
+            const spokeCount = level >= 3 ? 6 : 4;
+            for (let i = 0; i < spokeCount; i++) {
+                const angle = (i * Math.PI * 2) / spokeCount + Math.random() * 0.1;
+                projectiles.push({
+                    type: 'dharmaWheel',
+                    x: p.x,
+                    y: p.y,
+                    vx: Math.cos(angle) * 7.5,
+                    vy: Math.sin(angle) * 7.5,
+                    radius: 16,
+                    damage: (30 + level * 15) * p.damageMult,
+                    bouncesLeft: 3 + level,
+                    life: 4.0
+                });
+            }
+        }
+
+        function fireLotusSeal(p) {
+            audio.playLotusSeal();
+            const level = p.weapons.lotusSeal;
+            const count = 2 + Math.floor(level / 2);
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                projectiles.push({
+                    type: 'lotusSeal',
+                    x: p.x,
+                    y: p.y,
+                    vx: Math.cos(angle) * 5,
+                    vy: Math.sin(angle) * 5,
+                    radius: 12,
+                    damage: (28 + level * 14) * p.damageMult,
+                    life: 3.5
+                });
+            }
+        }
+
+        /* ==========================================================================
+           6. CALLIGRAPHY ENEMIES ("貪", "嗔", "癡", "執")
+           ========================================================================== */
+        let enemies = [];
+        let inkSplatters = [];
+
+        const CALLIGRAPHY_TYPES = {
+            GREED: { char: '貪', name: '貪念墨魔', hp: 30, speed: 2.3, size: 20, color: '#ef4444', glow: '#881337', score: 10 },
+            ANGER: { char: '嗔', name: '嗔恚火墨', hp: 55, speed: 1.7, size: 24, color: '#f97316', glow: '#7c2d12', score: 20 },
+            IGNORANCE: { char: '癡', name: '愚癡幻墨', hp: 110, speed: 1.2, size: 28, color: '#06b6d4', glow: '#1e3a8a', score: 35 },
+            ATTACHMENT_BOSS: { char: '執', name: '執念大墨魔王', hp: 1600, speed: 0.8, size: 55, color: '#d4af37', glow: '#000000', isBoss: true, score: 600 }
+        };
+
+        class Enemy {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.hp = type.hp * (1 + survivalTime / 180);
+                this.maxHp = this.hp;
+                this.speed = type.speed;
+                this.size = type.size;
+                this.color = type.color;
+                this.glow = type.glow;
+                this.char = type.char;
+                this.isBoss = !!type.isBoss;
+                this.flashTimer = 0;
+            }
+
+            update(dt) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 0) {
+                    const vx = (dx / dist) * this.speed;
+                    const vy = (dy / dist) * this.speed;
+
+                    const nextX = this.x + vx;
+                    const colX = checkWallCollision(nextX, this.y, this.size);
+                    if (!colX.collided) this.x = nextX;
+                    else this.x += colX.nx * colX.overlap;
+
+                    const nextY = this.y + vy;
+                    const colY = checkWallCollision(this.x, nextY, this.size);
+                    if (!colY.collided) this.y = nextY;
+                    else this.y += colY.ny * colY.overlap;
+                }
+
+                if (this.flashTimer > 0) this.flashTimer -= dt;
+
+                if (dist < this.size + player.radius) {
+                    player.takeDamage(this.isBoss ? 20 : 6);
+                }
+
+                if (Math.random() < 0.05) {
+                    inkSplatters.push({
+                        x: this.x + (Math.random() - 0.5) * 10,
+                        y: this.y + (Math.random() - 0.5) * 10,
+                        radius: 3 + Math.random() * 5,
+                        color: this.color,
+                        alpha: 0.6,
+                        life: 8.0
+                    });
+                }
+            }
+
+            draw() {
+                const screenX = this.x - camera.x;
+                const screenY = this.y - camera.y;
+
+                if (screenX < -80 || screenX > windowWidth + 80 || screenY < -80 || screenY > windowHeight + 80) return;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                ctx.shadowColor = this.glow;
+                ctx.shadowBlur = this.isBoss ? 25 : 12;
+
+                ctx.fillStyle = this.flashTimer > 0 ? '#ffffff' : this.color;
+                ctx.font = `900 ${this.size * 1.8}px 'KaiTi', 'STKaiti', 'Noto Serif TC', serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.char, 0, 0);
+
+                if (this.isBoss) {
+                    ctx.strokeStyle = '#d4af37';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 1.3, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    const barW = 90;
+                    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                    ctx.fillRect(-barW / 2, -this.size - 18, barW, 8);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(-barW / 2, -this.size - 18, barW * (this.hp / this.maxHp), 8);
+                    ctx.strokeStyle = '#d4af37';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(-barW / 2, -this.size - 18, barW, 8);
+                }
+
+                ctx.restore();
+            }
+
+            takeDamage(amount, knockAngle = 0, knockForce = 0) {
+                this.hp -= amount;
+                this.flashTimer = 0.12;
+
+                if (knockForce > 0) {
+                    const kx = this.x + Math.cos(knockAngle) * knockForce;
+                    const ky = this.y + Math.sin(knockAngle) * knockForce;
+                    if (!checkWallCollision(kx, ky, this.size).collided) {
+                        this.x = kx;
+                        this.y = ky;
+                    }
+                }
+
+                addFloatingText(Math.round(amount).toString(), this.x, this.y, '#fde047', 15);
+
+                if (this.hp <= 0) {
+                    transcendedCount++;
+                    audio.playCollectOrb();
+
+                    for (let i = 0; i < (this.isBoss ? 25 : 8); i++) {
+                        inkSplatters.push({
+                            x: this.x + (Math.random() - 0.5) * 40,
+                            y: this.y + (Math.random() - 0.5) * 40,
+                            radius: 4 + Math.random() * 10,
+                            color: this.color,
+                            alpha: 0.8,
+                            life: 12.0
+                        });
+                    }
+
+                    spawnMeritOrb(this.x, this.y, this.isBoss ? 200 : this.type.score);
+
+                    const words = ['超度', '淨化', '消業', '解脫', '空'];
+                    const w = words[Math.floor(Math.random() * words.length)];
+                    addFloatingText(w, this.x, this.y - 15, '#34d399', 20, true);
+                }
+            }
+        }
+
+        let spawnTimer = 0;
+        let bossSpawnedAt = {};
+
+        function updateEnemySpawner(dt) {
+            spawnTimer += dt;
+            const spawnInterval = Math.max(0.25, 1.3 - survivalTime / 180);
+
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+
+                let spawnX, spawnY;
+                let attempts = 0;
+                do {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 500 + Math.random() * 250;
+                    spawnX = player.x + Math.cos(angle) * dist;
+                    spawnY = player.y + Math.sin(angle) * dist;
+                    attempts++;
+                } while (checkWallCollision(spawnX, spawnY, 20).collided && attempts < 15);
+
+                let type = CALLIGRAPHY_TYPES.GREED;
+                const rand = Math.random();
+                if (survivalTime > 25 && rand > 0.5) type = CALLIGRAPHY_TYPES.ANGER;
+                if (survivalTime > 55 && rand > 0.75) type = CALLIGRAPHY_TYPES.IGNORANCE;
+
+                enemies.push(new Enemy(spawnX, spawnY, type));
+            }
+
+            const min = Math.floor(survivalTime / 60);
+            if (min > 0 && !bossSpawnedAt[min]) {
+                bossSpawnedAt[min] = true;
+                enemies.push(new Enemy(player.x + 300, player.y + 300, CALLIGRAPHY_TYPES.ATTACHMENT_BOSS));
+                addFloatingText('⚠️ 執念大魔王 降臨！', player.x, player.y - 80, '#ef4444', 26, true);
+            }
+        }
+
+        /* ==========================================================================
+           7. MERIT ORBS & FLOATING TEXTS
+           ========================================================================== */
+        let meritOrbs = [];
+        let floatingTexts = [];
+
+        class MeritOrb {
+            constructor(x, y, value) {
+                this.x = x;
+                this.y = y;
+                this.value = value;
+                this.radius = value >= 100 ? 10 : 7;
+            }
+
+            update() {
+                const dist = Math.hypot(player.x - this.x, player.y - this.y);
+                if (dist < player.magnetRadius) {
+                    const speed = 9 + (1 - dist / player.magnetRadius) * 6;
+                    this.x += ((player.x - this.x) / dist) * speed;
+                    this.y += ((player.y - this.y) / dist) * speed;
+
+                    if (dist < player.radius + this.radius) {
+                        player.addExp(this.value);
+                        audio.playCollectOrb();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            draw() {
+                const screenX = this.x - camera.x;
+                const screenY = this.y - camera.y;
+                if (screenX < -20 || screenX > windowWidth + 20 || screenY < -20 || screenY > windowHeight + 20) return;
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#fde047';
+                ctx.shadowColor = '#d4af37';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+
+                ctx.fillStyle = '#0e5c36';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('悟', 0, 0);
+
+                ctx.restore();
+            }
+        }
+
+        function spawnMeritOrb(x, y, value) {
+            meritOrbs.push(new MeritOrb(x, y, value));
+        }
+
+        function addFloatingText(text, x, y, color = '#ffffff', fontSize = 14, isImportant = false) {
+            floatingTexts.push({
+                text: text,
+                x: x,
+                y: y,
+                color: color,
+                fontSize: fontSize,
+                alpha: 1.0,
+                vy: isImportant ? -1.2 : -0.8,
+                life: isImportant ? 1.5 : 0.85
+            });
+        }
+
+        /* ==========================================================================
+           8. HUD & UI MANAGEMENT
+           ========================================================================== */
+        function updateHUD() {
+            // Update HP
+            const hpPct = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
+            document.getElementById('hpBar').style.width = `${hpPct}%`;
+            document.getElementById('hpText').innerText = `${Math.ceil(player.hp)} / ${Math.ceil(player.maxHp)}`;
+
+            // Update EXP
+            const expPct = Math.max(0, Math.min(100, (player.exp / player.nextExp) * 100));
+            document.getElementById('expBar').style.width = `${expPct}%`;
+            document.getElementById('expText').innerText = `${Math.floor(expPct)}%`;
+
+            // Update Level & Kills
+            document.getElementById('hudLevel').innerText = player.level;
+            document.getElementById('killText').innerText = transcendedCount;
+
+            // Update Active Weapons Tray
+            const tray = document.getElementById('weaponsTray');
+            tray.innerHTML = '';
+            
+            const weaponIcons = {
+                lotusBeam: '⚡',
+                malaBeads: '📿',
+                woodenFish: '🪵',
+                dharmaWheel: '☸️',
+                lotusSeal: '🪷'
+            };
+
+            Object.keys(player.weapons).forEach(wKey => {
+                const lvl = player.weapons[wKey];
+                if (lvl > 0) {
+                    const badge = document.createElement('div');
+                    badge.className = 'flex items-center gap-1 bg-stone-900 border border-amber-500/40 rounded-full px-2.5 py-1 text-xs';
+                    badge.innerHTML = `<span>${weaponIcons[wKey] || '✨'}</span><span class="font-bold text-yellow-300">Lv.${lvl}</span>`;
+                    tray.appendChild(badge);
+                }
+            });
+        }
+
+        function updateHUDClock() {
+            const mins = Math.floor(survivalTime / 60).toString().padStart(2, '0');
+            const secs = Math.floor(survivalTime % 60).toString().padStart(2, '0');
+            document.getElementById('timerText').innerText = `${mins}:${secs}`;
+        }
+
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                document.getElementById('pauseModal').classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                document.getElementById('pauseModal').classList.add('hidden');
+            }
+        }
+
+        /* ==========================================================================
+           9. MAIN RENDER & GAME LOOP
+           ========================================================================== */
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            if (gameState === 'PLAYING') {
+                survivalTime += dt;
+                updateGame(dt);
+            }
+
+            renderGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateGame(dt) {
+            player.update(dt);
+            updateEnemySpawner(dt);
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.update(dt);
+                if (e.hp <= 0) enemies.splice(i, 1);
+            }
+
+            // Lotus Beams
+            for (let i = lotusBeams.length - 1; i >= 0; i--) {
+                const b = lotusBeams[i];
+                b.timer -= dt;
+
+                const cosA = Math.cos(b.angle);
+                const sinA = Math.sin(b.angle);
+
+                enemies.forEach(e => {
+                    const dx = e.x - b.x;
+                    const dy = e.y - b.y;
+                    const proj = dx * cosA + dy * sinA;
+                    const perp = Math.abs(-dx * sinA + dy * cosA);
+
+                    if (proj >= 0 && proj <= b.length && perp <= b.width / 2 + e.size) {
+                        e.takeDamage(b.damage * dt * 10, b.angle, 2);
+                    }
+                });
+
+                if (b.timer <= 0) lotusBeams.splice(i, 1);
+            }
+
+            // Mala Beads Orbit
+            if (player.weapons.malaBeads > 0) {
+                const level = player.weapons.malaBeads;
+                const beadCount = 3 + (level - 1);
+                const orbitR = 85 + level * 8;
+                malaOrbitAngle += 0.035 * (1 + level * 0.1);
+
+                for (let i = 0; i < beadCount; i++) {
+                    const a = malaOrbitAngle + (i * Math.PI * 2) / beadCount;
+                    const bx = player.x + Math.cos(a) * orbitR;
+                    const by = player.y + Math.sin(a) * orbitR;
+
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - bx, e.y - by) < e.size + 10) {
+                            e.takeDamage((14 + level * 6) * player.damageMult * dt * 10, a, 3);
+                        }
+                    });
+                }
+            }
+
+            // Shockwaves
+            for (let i = shockwaves.length - 1; i >= 0; i--) {
+                const sw = shockwaves[i];
+                sw.radius += 260 * dt;
+                sw.alpha = 1.0 - sw.radius / sw.maxRadius;
+
+                enemies.forEach(e => {
+                    const dist = Math.hypot(e.x - sw.x, e.y - sw.y);
+                    if (Math.abs(dist - sw.radius) < 22) {
+                        const angle = Math.atan2(e.y - sw.y, e.x - sw.x);
+                        e.takeDamage(sw.damage * dt * 6, angle, sw.knockback);
+                    }
+                });
+
+                if (sw.radius >= sw.maxRadius) shockwaves.splice(i, 1);
+            }
+
+            // Projectiles (Dharma Wheels & Lotus Seals)
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.life -= dt;
+
+                if (p.type === 'lotusSeal') {
+                    // Find nearest enemy for homing
+                    let nearest = null;
+                    let minDist = 400;
+                    enemies.forEach(e => {
+                        const d = Math.hypot(e.x - p.x, e.y - p.y);
+                        if (d < minDist) { minDist = d; nearest = e; }
+                    });
+
+                    if (nearest) {
+                        const angle = Math.atan2(nearest.y - p.y, nearest.x - p.x);
+                        p.vx += Math.cos(angle) * 0.8;
+                        p.vy += Math.sin(angle) * 0.8;
+                        const spd = Math.hypot(p.vx, p.vy);
+                        if (spd > 7) { p.vx = (p.vx / spd) * 7; p.vy = (p.vy / spd) * 7; }
+                    }
+                }
+
+                const nextX = p.x + p.vx;
+                const nextY = p.y + p.vy;
+
+                const colX = checkWallCollision(nextX, p.y, p.radius);
+                if (colX.collided) {
+                    p.vx = -p.vx;
+                    if (p.bouncesLeft !== undefined) p.bouncesLeft--;
+                } else {
+                    p.x = nextX;
+                }
+
+                const colY = checkWallCollision(p.x, nextY, p.radius);
+                if (colY.collided) {
+                    p.vy = -p.vy;
+                    if (p.bouncesLeft !== undefined) p.bouncesLeft--;
+                } else {
+                    p.y = nextY;
+                }
+
+                enemies.forEach(e => {
+                    if (Math.hypot(e.x - p.x, e.y - p.y) < e.size + p.radius) {
+                        e.takeDamage(p.damage, Math.atan2(p.vy, p.vx), 4);
+                        if (p.type === 'lotusSeal') p.life = 0; // explode on impact
+                    }
+                });
+
+                if ((p.bouncesLeft !== undefined && p.bouncesLeft <= 0) || p.life <= 0) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            for (let i = meritOrbs.length - 1; i >= 0; i--) {
+                if (meritOrbs[i].update()) meritOrbs.splice(i, 1);
+            }
+
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y += ft.vy;
+                ft.alpha -= dt / ft.life;
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+
+            for (let i = inkSplatters.length - 1; i >= 0; i--) {
+                inkSplatters[i].life -= dt;
+                if (inkSplatters[i].life <= 0) inkSplatters.splice(i, 1);
+            }
+
+            updateHUDClock();
+        }
+
+        /* ==========================================================================
+           10. MAZE & GRAPHICS RENDERING
+           ========================================================================== */
+        function renderGame() {
+            drawWoodenFloor();
+
+            inkSplatters.forEach(splat => {
+                const screenX = splat.x - camera.x;
+                const screenY = splat.y - camera.y;
+                if (screenX < -30 || screenX > windowWidth + 30 || screenY < -30 || screenY > windowHeight + 30) return;
+
+                ctx.save();
+                ctx.globalAlpha = Math.min(splat.alpha, splat.life / 2);
+                ctx.fillStyle = splat.color;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, splat.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            drawMazeWalls();
+            meritOrbs.forEach(orb => orb.draw());
+
+            shockwaves.forEach(sw => {
+                const screenX = sw.x - camera.x;
+                const screenY = sw.y - camera.y;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, sw.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(52, 211, 153, ${sw.alpha})`;
+                ctx.lineWidth = 5;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            lotusBeams.forEach(b => {
+                const screenX = b.x - camera.x;
+                const screenY = b.y - camera.y;
+                ctx.save();
+                ctx.translate(screenX, screenY);
+                ctx.rotate(b.angle);
+
+                const grad = ctx.createLinearGradient(0, -b.width / 2, 0, b.width / 2);
+                grad.addColorStop(0, 'rgba(14, 92, 54, 0)');
+                grad.addColorStop(0.5, '#fde047');
+                grad.addColorStop(1, 'rgba(14, 92, 54, 0)');
+
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, -b.width / 2, b.length, b.width);
+                ctx.restore();
+            });
+
+            enemies.forEach(e => e.draw());
+
+            if (player.weapons.malaBeads > 0 && gameState !== 'TITLE') {
+                const level = player.weapons.malaBeads;
+                const beadCount = 3 + (level - 1);
+                const orbitR = 85 + level * 8;
+                const screenPX = player.x - camera.x;
+                const screenPY = player.y - camera.y;
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(screenPX, screenPY, orbitR, 0, Math.PI * 2);
+                ctx.stroke();
+
+                for (let i = 0; i < beadCount; i++) {
+                    const a = malaOrbitAngle + (i * Math.PI * 2) / beadCount;
+                    const bx = screenPX + Math.cos(a) * orbitR;
+                    const by = screenPY + Math.sin(a) * orbitR;
+
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = '#d4af37';
+                    ctx.shadowColor = '#fde047';
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+
+                    ctx.fillStyle = '#0e5c36';
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('卍', bx, by);
+                }
+                ctx.restore();
+            }
+
+            projectiles.forEach(p => {
+                const screenX = p.x - camera.x;
+                const screenY = p.y - camera.y;
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                if (p.type === 'dharmaWheel') {
+                    ctx.rotate(Date.now() * 0.01);
+                    ctx.strokeStyle = '#d4af37';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    for (let k = 0; k < 6; k++) {
+                        const a = (k * Math.PI) / 3;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(Math.cos(a) * p.radius, Math.sin(a) * p.radius);
+                        ctx.stroke();
+                    }
+                } else if (p.type === 'lotusSeal') {
+                    ctx.fillStyle = '#34d399';
+                    ctx.shadowColor = '#fde047';
+                    ctx.shadowBlur = 8;
+                    ctx.font = 'bold 16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🪷', 0, 0);
+                }
+                ctx.restore();
+            });
+
+            player.draw();
+
+            floatingTexts.forEach(ft => {
+                const screenX = ft.x - camera.x;
+                const screenY = ft.y - camera.y;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ft.alpha);
+                ctx.fillStyle = ft.color;
+                ctx.font = `bold ${ft.fontSize}px 'Noto Serif TC', serif`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 4;
+                ctx.fillText(ft.text, screenX, screenY);
+                ctx.restore();
+            });
+        }
+
+        function drawWoodenFloor() {
+            const plankWidth = 180;
+            const plankHeight = 45;
+
+            const startC = Math.max(0, Math.floor(camera.x / plankWidth));
+            const endC = Math.min(Math.floor((WORLD_WIDTH) / plankWidth), Math.ceil((camera.x + windowWidth) / plankWidth));
+            const startR = Math.max(0, Math.floor(camera.y / plankHeight));
+            const endR = Math.min(Math.floor((WORLD_HEIGHT) / plankHeight), Math.ceil((camera.y + windowHeight) / plankHeight));
+
+            for (let r = startR; r <= endR; r++) {
+                for (let c = startC; c <= endC; c++) {
+                    const x = c * plankWidth - (r % 2 === 0 ? 0 : plankWidth / 2) - camera.x;
+                    const y = r * plankHeight - camera.y;
+
+                    const woodTone = (r + c) % 3 === 0 ? '#26180e' : (r + c) % 3 === 1 ? '#1f130b' : '#2b1b10';
+                    ctx.fillStyle = woodTone;
+                    ctx.fillRect(x, y, plankWidth, plankHeight);
+
+                    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(x, y, plankWidth, plankHeight);
+
+                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.03)';
+                    ctx.beginPath();
+                    ctx.moveTo(x + 10, y + plankHeight * 0.3);
+                    ctx.lineTo(x + plankWidth - 10, y + plankHeight * 0.3);
+                    ctx.moveTo(x + 20, y + plankHeight * 0.7);
+                    ctx.lineTo(x + plankWidth - 20, y + plankHeight * 0.7);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawMazeWalls() {
+            const startC = Math.max(0, Math.floor(camera.x / TILE_SIZE));
+            const endC = Math.min(GRID_COLS - 1, Math.ceil((camera.x + windowWidth) / TILE_SIZE));
+            const startR = Math.max(0, Math.floor(camera.y / TILE_SIZE));
+            const endR = Math.min(GRID_ROWS - 1, Math.ceil((camera.y + windowHeight) / TILE_SIZE));
+
+            for (let r = startR; r <= endR; r++) {
+                for (let c = startC; c <= endC; c++) {
+                    const tile = mazeGrid[r][c];
+                    if (tile === 0) continue;
+
+                    const screenX = c * TILE_SIZE - camera.x;
+                    const screenY = r * TILE_SIZE - camera.y;
+
+                    if (tile === 1) {
+                        ctx.fillStyle = '#3e2415';
+                        ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+
+                        ctx.strokeStyle = '#d4af37';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(screenX + 3, screenY + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+
+                        ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX + 12, screenY + 12);
+                        ctx.lineTo(screenX + TILE_SIZE - 12, screenY + TILE_SIZE - 12);
+                        ctx.moveTo(screenX + TILE_SIZE - 12, screenY + 12);
+                        ctx.lineTo(screenX + TILE_SIZE - 12, screenY + 12);
+                        ctx.stroke();
+                    } else if (tile === 2) {
+                        ctx.fillStyle = '#1c130d';
+                        ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+
+                        ctx.strokeStyle = '#0e5c36';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(screenX + 2, screenY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+
+                        ctx.save();
+                        ctx.translate(screenX + TILE_SIZE / 2, screenY + TILE_SIZE / 2);
+                        ctx.fillStyle = '#d4af37';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#0e5c36';
+                        ctx.font = 'bold 12px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🪷', 0, 0);
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        /* ==========================================================================
+           11. BUDDHIST TRIVIA QUIZ & UPGRADE MANAGERS
+           ========================================================================== */
+        const BUDDHIST_QUIZ_POOL = [
+            {
+                category: "【三毒與修心】",
+                question: "佛教中常提到的「三毒」，指阻礙我們清淨自性的哪三種煩惱？",
+                options: ["貪、瞋、癡", "戒、定、慧", "苦、集、滅", "身、口、意"],
+                correct: 0,
+                explanation: "「貪（貪愛）、瞋（瞋恚）、癡（愚癡）」為三毒，是一切痛苦與煩惱的根源。"
+            },
+            {
+                category: "【禪門法器】",
+                question: "禪寺中修行者敲擊「木魚」的主要寓意為何？",
+                options: ["魚晝夜不合目，警惕修行者不可怠惰", "木魚聲音高亢，用以召集鄉里", "象徵吉祥有餘，祈求豐收", "純粹為打擊樂器節奏配合"],
+                correct: 0,
+                explanation: "魚日夜不合眼，敲擊木魚旨在警惕修行人勇猛精進、不可昏沉怠惰。"
+            },
+            {
+                category: "【植物象徵】",
+                question: "佛教中「蓮花」出淤泥而不染，主要象徵什麼修持境界？",
+                options: ["清淨無染與佛性開顯", "富貴華麗與權勢", "長命百歲與無病", "世俗功名與利祿"],
+                correct: 0,
+                explanation: "蓮花根生於淤泥而開出潔淨花朵，象徵身處塵世而不受污染的清淨佛性。"
+            },
+            {
+                category: "【四聖諦】",
+                question: "釋迦牟尼佛成道後初轉法輪，所宣說的「四聖諦」是指？",
+                options: ["苦諦、集諦、滅諦、道諦", "天諦、地諦、人諦、心諦", "生諦、老諦、病諦、死諦", "過去諦、現在諦、未來諦、永恆諦"],
+                correct: 0,
+                explanation: "四聖諦為苦、集、滅、道，是佛教解析痛苦與解脫的核心真理。"
+            },
+            {
+                category: "【六度波羅蜜】",
+                question: "菩薩行的「六度波羅蜜」中，「布施」的主要精神為何？",
+                options: ["廣結善緣、捨離貪執與慈悲奉獻", "嚴守規矩、不犯過失", "忍受屈辱、心不生嗔", "專心坐禪、不動不搖"],
+                correct: 0,
+                explanation: "布施能破除對物質與自我執著，發揚慈悲利他精神。"
+            },
+            {
+                category: "【因果真理】",
+                question: "佛教講求的「因果律」核心觀念為何？",
+                options: ["種善因得善果，種惡因得惡果", "一切富貴貧賤皆由上天隨機安排", "今生的作為不會對未來產生影響", "只要心懷善意，犯錯便無須承擔責任"],
+                correct: 0,
+                explanation: "因果通於三世，業力自作自受，善惡各有報應。"
+            },
+            {
+                category: "【八正道】",
+                question: "八正道是邁向解脫的八種正確途徑，其中「正見」指的是什麼？",
+                options: ["理解四聖諦與因果真理的正確知見", "看事物時眼睛要放正", "只看美好事物，忽視世間苦難", "盲目相信所有傳聞"],
+                correct: 0,
+                explanation: "「正見」為八正道之首，指具備符合因果與緣起真理的正確正知正見。"
+            },
+            {
+                category: "【寶覺精神】",
+                question: "寶覺中學以佛化教育辦學，其校訓是甚麼？",
+                options: ["「慈悲博愛」", "「競爭第一」", "「人定勝天」", "「我愛寶覺」"],
+                correct: 0,
+                explanation: "「慈悲博愛」旨在培育學生成為一個既有儒雅品德，又能關懷社會、包容差異、積極助人的優秀公民。"
+            }
+        ];
+
+        const PRAJNA_UPGRADES_DATABASE = [
+            {
+                id: 'prajna_damage',
+                title: '【般若神威】',
+                type: 'stat',
+                key: 'prajnaDamage',
+                icon: '⚡',
+                desc: '般若智慧大爆發！全法寶傷害極限提升 50%！',
+                isPrajna: true
+            },
+            {
+                id: 'prajna_heal',
+                title: '【金剛不壞】',
+                type: 'stat',
+                key: 'prajnaHeal',
+                icon: '🛡️',
+                desc: '最大慈悲心提升 50%，並瞬間完全恢復 100% HP！',
+                isPrajna: true
+            },
+            {
+                id: 'prajna_wipe',
+                title: '【大悲清淨】',
+                type: 'special',
+                key: 'prajnaWipe',
+                icon: '🪷',
+                desc: '佛光普照全場！瞬間超度當前畫面所有惡念化為功德珠！',
+                isPrajna: true
+            },
+            {
+                id: 'prajna_weapon_double',
+                title: '【法寶頓悟】',
+                type: 'special',
+                key: 'prajnaWeaponDouble',
+                icon: '☸️',
+                desc: '靈感頓悟！隨機法寶等級直接連續 +2 級！',
+                isPrajna: true
+            },
+            {
+                id: 'prajna_speed_magnet',
+                title: '【神足廣照】',
+                type: 'stat',
+                key: 'prajnaSpeedMagnet',
+                icon: '👟',
+                desc: '移動速度 +30%，且功德攝受範圍擴大 100%！',
+                isPrajna: true
+            }
+        ];
+
+        const quizModal = document.getElementById('quizModal');
+        const levelUpModal = document.getElementById('levelUpModal');
+
+        function triggerQuizModal() {
+            gameState = 'QUIZ';
+            quizModal.classList.remove('hidden');
+            document.getElementById('quizFeedback').classList.add('hidden');
+
+            const quiz = BUDDHIST_QUIZ_POOL[Math.floor(Math.random() * BUDDHIST_QUIZ_POOL.length)];
+
+            document.getElementById('quizCategory').innerText = quiz.category;
+            document.getElementById('quizQuestionText').innerText = quiz.question;
+            const container = document.getElementById('quizOptionsContainer');
+            container.innerHTML = '';
+
+            quiz.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full py-3 px-4 rounded-xl bg-stone-800 border border-emerald-600/40 hover:bg-emerald-800 hover:border-yellow-400 text-left text-xs md:text-sm text-stone-200 transition-all font-semibold flex items-center justify-between group cursor-pointer';
+                btn.innerHTML = `
+                    <span>${index + 1}. ${optText}</span>
+                    <span class="opacity-0 group-hover:opacity-100 text-yellow-300">➜</span>
+                `;
+
+                btn.addEventListener('click', () => {
+                    checkQuizAnswer(index === quiz.correct, quiz);
+                });
+
+                container.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(isCorrect, quiz) {
+            const container = document.getElementById('quizOptionsContainer');
+            Array.from(container.children).forEach(b => b.disabled = true);
+
+            const feedback = document.getElementById('quizFeedback');
+            feedback.classList.remove('hidden');
+
+            if (isCorrect) {
+                audio.playCorrectAnswer();
+                feedback.className = 'rounded-xl p-3 text-xs md:text-sm font-bold text-center border bg-emerald-950/90 border-yellow-400 text-yellow-300 shadow-lg';
+                feedback.innerHTML = `
+                    <div class="text-base mb-1">🎉 智慧大增！完全參透！</div>
+                    <div>獲得<span class="text-amber-300 font-black">【般若加持】</span>極強升級選項！</div>
+                    <div class="text-[10px] text-emerald-300 font-normal mt-1">${quiz.explanation}</div>
+                `;
+            } else {
+                audio.playWrongAnswer();
+                feedback.className = 'rounded-xl p-3 text-xs md:text-sm font-bold text-center border bg-amber-950/90 border-amber-600 text-amber-200';
+                feedback.innerHTML = `
+                    <div class="text-base mb-1">🧘 再接再厲！</div>
+                    <div>獲得標準修行升級選項。</div>
+                    <div class="text-[10px] text-amber-300 font-normal mt-1">${quiz.explanation}</div>
+                `;
+            }
+
+            setTimeout(() => {
+                quizModal.classList.add('hidden');
+                triggerLevelUpModal(isCorrect);
+            }, 1600);
+        }
+
+        function triggerLevelUpModal(isPrajnaBoost = false) {
+            gameState = 'LEVEL_UP';
+            levelUpModal.classList.remove('hidden');
+
+            const container = document.getElementById('upgradeCardsContainer');
+            container.innerHTML = '';
+
+            const subtitle = document.getElementById('upgradeSubtitle');
+            const title = document.getElementById('upgradeTitle');
+
+            if (isPrajnaBoost) {
+                subtitle.innerText = '✨ 般若智慧加持 • 善根顯發 ✨';
+                subtitle.className = 'text-yellow-300 text-sm font-bold tracking-widest uppercase mb-1 animate-pulse';
+                title.innerText = '選擇強效【般若】法門';
+            } else {
+                subtitle.innerText = '~ 智慧開悟 • 法寶升級 ~';
+                subtitle.className = 'text-emerald-400 text-sm font-bold tracking-widest uppercase mb-1';
+                title.innerText = '選擇佛教科技法門';
+            }
+
+            let choices = [];
+            if (isPrajnaBoost) {
+                const prajnaShuffled = [...PRAJNA_UPGRADES_DATABASE].sort(() => 0.5 - Math.random()).slice(0, 2);
+                const stdShuffled = [...UPGRADES_DATABASE].sort(() => 0.5 - Math.random()).slice(0, 1);
+                choices = [...prajnaShuffled, ...stdShuffled];
+            } else {
+                choices = [...UPGRADES_DATABASE].sort(() => 0.5 - Math.random()).slice(0, 3);
+            }
+
+            choices.forEach(up => {
+                const isPrajna = !!up.isPrajna;
+                const currentLevel = up.type === 'weapon' ? player.weapons[up.key] : 0;
+                const nextLevel = currentLevel + 1;
+                const descText = up.type === 'weapon' ? (up.upgradeDesc[nextLevel - 1] || '提升威力') : up.desc;
+
+                const card = document.createElement('div');
+                card.className = isPrajna
+                    ? 'bg-gradient-to-b from-stone-900 via-emerald-950 to-stone-900 border-2 border-yellow-400 hover:border-yellow-200 rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 shadow-xl text-left flex flex-col justify-between relative overflow-hidden'
+                    : 'bg-stone-900/95 border-2 border-amber-500/40 hover:border-emerald-400 rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-xl text-left flex flex-col justify-between';
+
+                card.innerHTML = `
+                    ${isPrajna ? '<div class="absolute -right-7 -top-7 w-16 h-16 bg-yellow-500/20 rounded-full blur-md"></div>' : ''}
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-3xl">${up.icon}</span>
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${isPrajna ? 'bg-yellow-500 text-stone-950 border border-yellow-200' : 'bg-emerald-800/40 text-emerald-300 border border-emerald-500/30'}">
+                                ${isPrajna ? '般若加持' : (currentLevel === 0 ? '解鎖法寶' : `升級 Lv.${nextLevel}`)}
+                            </span>
+                        </div>
+                        <h3 class="text-lg font-bold ${isPrajna ? 'text-yellow-300' : 'text-amber-200'} mb-1">${up.title}</h3>
+                        <p class="text-xs text-stone-300 leading-relaxed mb-4">${descText}</p>
+                    </div>
+                    <button class="w-full py-2.5 rounded-xl ${isPrajna ? 'bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 text-stone-950 font-black' : 'bg-gradient-to-r from-emerald-700 to-amber-500 text-stone-950 font-bold'} text-xs hover:brightness-110 shadow-md cursor-pointer">
+                        領悟參透
+                    </button>
+                `;
+
+                card.addEventListener('click', () => {
+                    applyUpgrade(up);
+                    levelUpModal.classList.add('hidden');
+                    gameState = 'PLAYING';
+                    updateHUD();
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function applyUpgrade(upgrade) {
+            audio.playSingingBowl();
+            if (upgrade.isPrajna) {
+                if (upgrade.key === 'prajnaDamage') {
+                    player.damageMult *= 1.5;
+                } else if (upgrade.key === 'prajnaHeal') {
+                    player.maxHp *= 1.5;
+                    player.hp = player.maxHp;
+                } else if (upgrade.key === 'prajnaWipe') {
+                    enemies.forEach(e => {
+                        e.hp = 0;
+                        transcendedCount++;
+                        spawnMeritOrb(e.x, e.y, e.isBoss ? 200 : e.type.score);
+                        addFloatingText('蓮花超度', e.x, e.y - 15, '#34d399', 22, true);
+                    });
+                    enemies = [];
+                } else if (upgrade.key === 'prajnaWeaponDouble') {
+                    const activeKeys = Object.keys(player.weapons);
+                    const randKey = activeKeys[Math.floor(Math.random() * activeKeys.length)];
+                    player.weapons[randKey] += 2;
+                } else if (upgrade.key === 'prajnaSpeedMagnet') {
+                    player.speed *= 1.3;
+                    player.magnetRadius *= 2.0;
+                }
+            } else if (upgrade.type === 'weapon') {
+                player.weapons[upgrade.key] = (player.weapons[upgrade.key] || 0) + 1;
+            } else {
+                if (upgrade.key === 'maxHp') {
+                    player.maxHp *= 1.35;
+                    player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.3);
+                } else if (upgrade.key === 'speed') {
+                    player.speed *= 1.15;
+                } else if (upgrade.key === 'magnet') {
+                    player.magnetRadius *= 1.4;
+                } else if (upgrade.key === 'damage') {
+                    player.damageMult *= 1.2;
+                }
+            }
+        }
+
+        function triggerGameOver() {
+            gameState = 'GAME_OVER';
+            document.getElementById('gameOverModal').classList.remove('hidden');
+
+            const mins = Math.floor(survivalTime / 60).toString().padStart(2, '0');
+            const secs = Math.floor(survivalTime % 60).toString().padStart(2, '0');
+
+            document.getElementById('summaryTime').innerText = `${mins}:${secs}`;
+            document.getElementById('summaryKills').innerText = transcendedCount;
+            document.getElementById('summaryLevel').innerText = `Lv.${player.level}`;
+            document.getElementById('summaryMerit').innerText = totalMeritCollected;
+
+            let title = '點滴發心';
+            let rank = '修為境界：初入迷宮';
+            if (survivalTime >= 60) { title = '漸修克己'; rank = '修為境界：伏諸墨魔'; }
+            if (survivalTime >= 120) { title = '降伏其心'; rank = '修為境界：定慧等持'; }
+            if (survivalTime >= 180) { title = '心無罣礙'; rank = '修為境界：萬緣放下'; }
+            if (survivalTime >= 300) { title = '大徹大悟'; rank = '修為境界：明心見性'; }
+
+            document.getElementById('summaryTitle').innerText = title;
+            document.getElementById('summaryRank').innerText = rank;
+        }
+
+        /* ==========================================================================
+           12. STARTUP & GAME RESET CONTROLLER
+           ========================================================================== */
+        function startNewGame() {
+            audio.init();
+            audio.playSingingBowl();
+
+            // Reset Game Variables
+            survivalTime = 0;
+            transcendedCount = 0;
+            totalMeritCollected = 0;
+            enemies = [];
+            projectiles = [];
+            shockwaves = [];
+            lotusBeams = [];
+            meritOrbs = [];
+            floatingTexts = [];
+            inkSplatters = [];
+            bossSpawnedAt = {};
+            spawnTimer = 0;
+
+            player.reset();
+            generateMaze();
+            updateHUD();
+
+            // Hide all modals
+            document.getElementById('startModal').classList.add('hidden');
+            document.getElementById('pauseModal').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('quizModal').classList.add('hidden');
+            document.getElementById('levelUpModal').classList.add('hidden');
+
+            // Show HUD
+            document.getElementById('topHUD').classList.remove('hidden');
+            document.getElementById('weaponsTray').classList.remove('hidden');
+
+            gameState = 'PLAYING';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Bind UI Buttons
+            document.getElementById('startGameBtn').addEventListener('click', startNewGame);
+            document.getElementById('retryBtn').addEventListener('click', startNewGame);
+            document.getElementById('restartBtn').addEventListener('click', startNewGame);
+
+            document.getElementById('pauseBtn').addEventListener('click', togglePause);
+            document.getElementById('resumeBtn').addEventListener('click', togglePause);
+
+            document.getElementById('audioBtn').addEventListener('click', () => {
+                audio.muted = !audio.muted;
+                document.getElementById('audioBtn').innerText = audio.muted ? '🔇' : '🔊';
+            });
+
+            // Start animation loop
+            requestAnimationFrame(gameLoop);
+        });
+    </script>
+</body>
+</html>
